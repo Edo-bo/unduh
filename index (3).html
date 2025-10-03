@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengunduh Lagu & Video</title>
+    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Menggunakan Google Fonts untuk tampilan yang lebih modern -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style untuk menyembunyikan elemen */
+        .hidden {
+            display: none;
+        }
+        /* Transisi untuk popup */
+        #popup-container {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <!-- Kontainer Popup -->
+    <div id="popup-container" class="fixed top-5 right-5 z-50 rounded-lg shadow-xl p-4 max-w-sm opacity-0 transform translate-x-12">
+        <p id="popup-message" class="font-medium text-white"></p>
+    </div>
+
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-lg">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-cyan-400">Pengunduh MP3 & MP4</h1>
+            <p class="text-gray-400 mt-2">Masukkan URL atau tempel dari clipboard.</p>
+        </div>
+
+        <!-- Form Input URL dengan Tombol Paste -->
+        <div class="space-y-4">
+            <div class="relative">
+                <label for="url-input" class="sr-only">URL</label>
+                <!-- Tambahkan padding kanan (pr-12) agar teks tidak tertimpa tombol -->
+                <input type="url" id="url-input" class="w-full bg-gray-700 border-2 border-gray-600 text-white rounded-lg p-4 pr-12 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300" placeholder="Contoh: https://youtu.be/...">
+                <!-- Tombol Paste -->
+                <button id="paste-btn" type="button" class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-cyan-400 transition-colors" title="Tempel dari Clipboard">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                </button>
+            </div>
+            <button id="get-link-btn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 duration-300 shadow-lg flex items-center justify-center">
+                <span id="btn-text">Dapatkan Tautan Unduhan</span>
+                <!-- Indikator Loading -->
+                <svg id="loading-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Hasil Unduhan -->
+        <div id="result-container" class="mt-8 pt-6 border-t border-gray-700 hidden">
+            <h2 id="media-title" class="text-xl font-semibold text-center mb-4"></h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Tombol Unduh Audio (MP3) -->
+                <a id="audio-download-link" href="#" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 duration-300 shadow-lg flex items-center justify-center space-x-2">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" /></svg>
+                    <span class="download-text">Unduh Audio (MP3)</span>
+                    <svg class="animate-spin h-5 w-5 text-white hidden download-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </a>
+                <!-- Tombol Unduh Video (MP4) -->
+                <a id="video-download-link" href="#" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 duration-300 shadow-lg flex items-center justify-center space-x-2">
+                     <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    <span class="download-text">Unduh Video (MP4)</span>
+                    <svg class="animate-spin h-5 w-5 text-white hidden download-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mengambil elemen-elemen dari DOM
+        const urlInput = document.getElementById('url-input');
+        const pasteBtn = document.getElementById('paste-btn');
+        const getLinkBtn = document.getElementById('get-link-btn');
+        const btnText = document.getElementById('btn-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const resultContainer = document.getElementById('result-container');
+        const mediaTitle = document.getElementById('media-title');
+        const audioLink = document.getElementById('audio-download-link');
+        const videoLink = document.getElementById('video-download-link');
+        const popupContainer = document.getElementById('popup-container');
+        const popupMessage = document.getElementById('popup-message');
+
+        // Fungsi untuk menampilkan popup
+        function showPopup(message, isSuccess = true) {
+            popupMessage.textContent = message;
+            popupContainer.classList.remove('bg-green-600', 'bg-red-600');
+            popupContainer.classList.add(isSuccess ? 'bg-green-600' : 'bg-red-600');
+            popupContainer.classList.remove('opacity-0', 'translate-x-12');
+            setTimeout(() => {
+                popupContainer.classList.add('opacity-0', 'translate-x-12');
+            }, 3000);
+        }
+
+        // --- FUNGSI BARU: Event listener untuk tombol paste ---
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                // Menggunakan Clipboard API modern untuk membaca teks
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    urlInput.value = text;
+                    showPopup("Tautan berhasil ditempel!", true);
+                } else {
+                    showPopup("Clipboard kosong.", false);
+                }
+            } catch (err) {
+                console.error('Gagal membaca clipboard: ', err);
+                showPopup("Gagal menempel. Browser mungkin tidak mendukung atau izin ditolak.", false);
+            }
+        });
+
+        // Event listener ke tombol 'Dapatkan Tautan'
+        getLinkBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) {
+                showPopup("URL tidak boleh kosong.", false);
+                return;
+            }
+            setLoading(true);
+            resultContainer.classList.add('hidden');
+
+            try {
+                const apiKey = "clutch";
+                const apiUrl = `https://api-alipclutch.vercel.app/download/ytdl?apikey=${apiKey}&url=${encodeURIComponent(url)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data.status && data.result) {
+                    const { title, audio, video } = data.result;
+                    mediaTitle.textContent = title;
+                    audioLink.href = audio;
+                    videoLink.href = video;
+                    audioLink.setAttribute('download', `${title.replace(/[^a-zA-Z0-9 ]/g, '')}.mp3`);
+                    videoLink.setAttribute('download', `${title.replace(/[^a-zA-Z0-9 ]/g, '')}.mp4`);
+                    resultContainer.classList.remove('hidden');
+                    showPopup("Tautan berhasil dibuat!", true);
+                } else {
+                    showPopup(data.message || "Gagal mendapatkan tautan.", false);
+                }
+            } catch (error) {
+                console.error("Terjadi kesalahan:", error);
+                showPopup("Terjadi kesalahan jaringan. Coba lagi.", false);
+            } finally {
+                setLoading(false);
+            }
+        });
+        
+        // Fungsi untuk jeda unduhan selama 10 detik
+        const handleDownloadDelay = (event) => {
+            event.preventDefault();
+            const linkElement = event.currentTarget;
+            const downloadText = linkElement.querySelector('.download-text');
+            const downloadSpinner = linkElement.querySelector('.download-spinner');
+            const href = linkElement.href;
+            const downloadAttr = linkElement.getAttribute('download');
+            
+            downloadText.classList.add('hidden');
+            downloadSpinner.classList.remove('hidden');
+            linkElement.style.pointerEvents = 'none';
+
+            showPopup("Mempersiapkan unduhan... Mohon tunggu.", true);
+
+            setTimeout(() => {
+                const tempLink = document.createElement('a');
+                tempLink.href = href;
+                tempLink.setAttribute('download', downloadAttr);
+                tempLink.style.display = 'none';
+                document.body.appendChild(tempLink);
+                tempLink.click();
+                document.body.removeChild(tempLink);
+                
+                downloadText.classList.remove('hidden');
+                downloadSpinner.classList.add('hidden');
+                linkElement.style.pointerEvents = 'auto';
+            }, 20000); // 10 detik
+        };
+        
+        audioLink.addEventListener('click', handleDownloadDelay);
+        videoLink.addEventListener('click', handleDownloadDelay);
+
+        // Fungsi untuk mengatur status loading tombol utama
+        function setLoading(isLoading) {
+            getLinkBtn.disabled = isLoading;
+            btnText.classList.toggle('hidden', isLoading);
+            loadingSpinner.classList.toggle('hidden', !isLoading);
+        }
+    </script>
+</body>
+</html>
+
+
